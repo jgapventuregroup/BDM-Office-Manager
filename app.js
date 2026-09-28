@@ -42,6 +42,7 @@ function row(v,x,i){
  else if(v==='calls')body='<b>'+esc(x.person)+'</b>'+(x.phone?' · '+esc(x.phone):'')+'<br>'+esc(x.reason);
  else if(v==='reminders')body='<b>'+esc(x.text)+'</b>'+(x.date?' · '+esc(x.date):'');
  else if(v==='notes')body='<b>'+esc(x.title||'Office Note')+'</b>'+(x.category?'<span class="tag">'+esc(x.category)+'</span>':'')+'<div class="note-preview">'+esc(x.text)+'</div>';
+else if(v==='learning')body='<div class="learning-head"><b>'+esc(x.question||'Learning Note')+'</b>'+(x.category?'<span class="tag">'+esc(x.category)+'</span>':'')</div><div class="note-preview"><strong>What I learned:</strong> '+esc(x.answer)+'</div>'+(x.remember?'<div class="muted"><strong>Remember:</strong> '+esc(x.remember)+'</div>':'');
 else body=esc(x.text)+(x.title?'<br><b>'+esc(x.title)+'</b>':'');
  return '<div class="card item row">'+body+'<button onclick="removeItem(\''+v+'\','+i+')">Delete</button></div>';
 }
@@ -51,7 +52,7 @@ function form(type){
  followup:['Follow Up',[['person','Who?'],['what','What do I need to follow up about?'],['when','When?','date']]],
  project:['Project',[['customer','Customer'],['address','Address'],['project','Project'],['status','Status'],['next',"What's next?"],['note','Important note','textarea']]],
  note:['Note',[['title','Title'],['category','Category'],['text','Write your note...','textarea']]],
- learning:['Learning',[['text','What am I learning?','textarea']]],
+ learning:['Learning',[['question','What was my question?'],['category','Category'],['answer','What did I learn?','textarea'],['remember','What should I remember?','textarea']]],
  appointment:['Appointment',[['title','Appointment / Event'],['person','Who?'],['date','Date','date'],['time','Time','time'],['location','Location']]],
  call:['Call',[['person','Who?'],['phone','Phone'],['reason','What do I need to call about?']]],
  reminder:['Reminder',[['text','Reminder'],['date','Date','date']]]
@@ -61,7 +62,7 @@ function form(type){
  html+='<div class="actions"><button onclick="saveForm(\''+type+'\')">Save</button><button onclick="render()">Cancel</button></div></div>';document.getElementById('content').innerHTML=html;
 }
 function saveForm(type){
- const defs={task:['title','due'],followup:['person','what','when'],project:['customer','address','project','status','next','note'],note:['title','category','text'],learning:['text'],appointment:['title','person','date','time','location'],call:['person','phone','reason'],reminder:['text','date']};
+ const defs={task:['title','due'],followup:['person','what','when'],project:['customer','address','project','status','next','note'],note:['title','category','text'],learning:['question','category','answer','remember'],appointment:['title','person','date','time','location'],call:['person','phone','reason'],reminder:['text','date']};
  const o={};(defs[type]||[]).forEach((k,i)=>o[k]=document.getElementById('f'+i)?.value.trim()||'');if(type==='task'||type==='appointment'||type==='call'||type==='reminder')o.done=false;
  const v={task:'tasks',followup:'followups',project:'projects',note:'notes',learning:'learning',appointment:'appointments',call:'calls',reminder:'reminders'}[type];
  data[v].unshift(o);save();view=v;render();
