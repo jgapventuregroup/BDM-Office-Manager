@@ -11,14 +11,20 @@ document.getElementById('nav').onclick=e=>{const b=e.target.closest('[data-view]
 document.querySelector('.quick').onclick=e=>{const b=e.target.closest('[data-add]');if(b)form(b.dataset.add)};
 function render(){document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===view));const c=document.getElementById('content');if(view==='today')todayView(c);else list(c,view)}
 function todayView(c){
- const open=data.tasks.filter(x=>!x.done), fu=data.followups.filter(x=>!x.done), ap=data.appointments.filter(x=>x.date===today&&!x.done), calls=data.calls.filter(x=>!x.done), rem=data.reminders.filter(x=>!x.done);
+ const open=data.tasks.filter(x=>!x.done).sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999'));
+ const fu=data.followups.filter(x=>!x.done).sort((a,b)=>(a.when||'9999').localeCompare(b.when||'9999'));
+ const ap=data.appointments.filter(x=>x.date===today&&!x.done).sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
+ const calls=data.calls.filter(x=>!x.done);
+ const rem=data.reminders.filter(x=>!x.done).sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'));
+ const overdue=open.filter(x=>x.due&&x.due<today).length;
+
  c.innerHTML='<div class="summary"><div class="stat"><b>'+open.length+'</b><span>Open Tasks</span></div><div class="stat"><b>'+fu.length+'</b><span>Follow Ups</span></div><div class="stat"><b>'+ap.length+'</b><span>Appointments Today</span></div><div class="stat"><b>'+calls.length+'</b><span>Calls To Make</span></div></div>'+
- '<div class="grid">'+card('Things I Need To Do Today',open.slice(0,6).map(x=>'<div class="item"><b>'+esc(x.title)+'</b>'+(x.due?'<span class="muted"> · '+esc(x.due)+'</span>':'')+'</div>').join('')||empty())+
- card('Appointments',ap.slice(0,6).map(x=>'<div class="item"><b>'+esc(x.time||'')+'</b> '+esc(x.title)+(x.person?' — '+esc(x.person):'')+'</div>').join('')||empty())+
+ '<div class="grid">'+card('Things I Need To Do Today',open.slice(0,8).map((x,i)=>'<div class="item"><input class="check" type="checkbox" onchange="completeTaskByTitle('+JSON.stringify(x.title)+')"><b>'+esc(x.title)+'</b>'+(x.due?'<span class="'+(x.due<today?'overdue':'muted')+'"> · '+(x.due<today?'OVERDUE · ':'Due ')+esc(x.due)+'</span>':'')+'</div>').join('')||empty())+
+ card('Appointments',ap.slice(0,6).map((x,i)=>'<div class="item"><b>'+esc(x.time||'')+'</b> '+esc(x.title)+(x.person?' — '+esc(x.person):'')+(x.location?'<span class="muted"> · '+esc(x.location)+'</span>':'')+'</div>').join('')||empty())+
  card('Calls To Make',calls.slice(0,6).map(x=>'<div class="item"><b>'+esc(x.person)+'</b>'+(x.phone?' <span class="muted">· '+esc(x.phone)+'</span>':'')+'<br>'+esc(x.reason)+'</div>').join('')||empty())+
  card('Follow Ups',fu.slice(0,6).map(x=>'<div class="item"><b>'+esc(x.person)+'</b> — '+esc(x.what)+(x.when?'<span class="muted"> · '+esc(x.when)+'</span>':'')+'</div>').join('')||empty())+
- card('Important Reminders',rem.slice(0,6).map(x=>'<div class="item">'+esc(x.text)+(x.date?'<span class="muted"> · '+esc(x.date)+'</span>':'')+'</div>').join('')||empty())+
- card('Quick Notes',data.notes.slice(0,4).map(x=>'<div class="item">'+esc(x.text)+'</div>').join('')||empty())+'</div>';
+ card('Important Reminders',rem.slice(0,6).map(x=>'<div class="item">'+esc(x.text)+(x.date?'<span class="'+(x.date<today?'overdue':'muted')+'"> · '+(x.date<today?'OVERDUE · ':'')+esc(x.date)+'</span>':'')+'</div>').join('')||empty())+
+ card('Quick Notes',data.notes.slice(0,4).map(x=>'<div class="item">'+esc(x.text)+'</div>').join('')||empty())+'</div>'+(overdue?'<div class="alert">⚠ You have '+overdue+' overdue task'+(overdue===1?'':'s')+'.</div>':'');
 }
 function card(t,b){return '<section class="card"><h3>'+t+'</h3>'+b+'</section>'}
 function empty(){return '<div class="muted">Nothing here yet.</div>'}
@@ -59,6 +65,7 @@ function saveForm(type){
  const v={task:'tasks',followup:'followups',project:'projects',note:'notes',learning:'learning',appointment:'appointments',call:'calls',reminder:'reminders'}[type];
  data[v].unshift(o);save();view=v;render();
 }
+function completeTaskByTitle(title){const x=data.tasks.find(t=>t.title===title&&!t.done);if(x){x.done=true;save();render()}}
 function toggle(v,i){data[v][i].done=!data[v][i].done;save();render()}
 function removeItem(v,i){data[v].splice(i,1);save();render()}
 render();
