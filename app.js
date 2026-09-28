@@ -31,11 +31,11 @@ function empty(){return '<div class="muted">Nothing here yet.</div>'}
 function list(c,v){
  const map={tasks:['Tasks','task'],followups:['Follow Ups','followup'],appointments:['Appointments','appointment'],calls:['Calls To Make','call'],reminders:['Important Reminders','reminder'],projects:['Projects','project'],notes:['Notes','note'],learning:["Things I'm Learning",'learning']};
  const [title,type]=map[v];let arr=data[v]||[];
- c.innerHTML='<h2>'+title+'</h2><div class="actions"><button onclick="form(\''+type+'\')">+ Add</button></div><div class="list">'+(arr.length?arr.map((x,i)=>row(v,x,i)).join(''):'<div class="empty">Nothing here yet. Add your first one.</div>')+'</div>';
+ c.innerHTML='<h2>'+title+'</h2>'+(v==='tasks'?'<div class="task-help muted">Check a task when it is finished. Overdue tasks are marked automatically.</div>':'')+'<div class="actions"><button onclick="form(\''+type+'\')">+ Add</button></div><div class="list">'+(arr.length?arr.map((x,i)=>row(v,x,i)).join(''):'<div class="empty">Nothing here yet. Add your first one.</div>')+'</div>';
 }
 function row(v,x,i){
  let body='';
- if(v==='tasks')body='<input class="check" type="checkbox" '+(x.done?'checked':'')+' onchange="toggle(\'tasks\','+i+')"><b>'+esc(x.title)+'</b>'+(x.due?' <span class="muted">· Due '+esc(x.due)+'</span>':'');
+ if(v==='tasks')body='<input class="check" type="checkbox" '+(x.done?'checked':'')+' onchange="toggle(\'tasks\','+i+')"><b>'+esc(x.title)+'</b>'+(x.due?'<span class="'+(x.due<today&&!x.done?'overdue':'muted')+'"> · '+(x.due<today&&!x.done?'OVERDUE · ':'Due ')+esc(x.due)+'</span>':'');
  else if(v==='followups')body='<b>'+esc(x.person)+'</b><br>'+esc(x.what)+(x.when?'<br><span class="muted">Follow up: '+esc(x.when)+'</span>':'');
  else if(v==='projects')body='<div class="project-head"><b>'+esc(x.customer)+'</b><span class="status '+esc((x.status||'Active').toLowerCase().replace(/[^a-z]/g,''))+'">'+esc(x.status||'Active')+'</span></div> — '+esc(x.project)+(x.address?'<br><span class="muted">'+esc(x.address)+'</span>':'')+(x.next?'<br><strong>Next:</strong> '+esc(x.next):'')+(x.note?'<br><span class="muted">'+esc(x.note)+'</span>':'');
  else if(v==='appointments')body='<b>'+esc(x.date)+' '+esc(x.time)+'</b> — '+esc(x.title)+(x.person?' · '+esc(x.person):'')+(x.location?'<br><span class="muted">'+esc(x.location)+'</span>':'');
