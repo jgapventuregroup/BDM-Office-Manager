@@ -11,6 +11,24 @@ document.getElementById('todayDate').textContent=new Date().toLocaleDateString(u
 document.getElementById('nav').onclick=e=>{const b=e.target.closest('[data-view]');if(b){view=b.dataset.view;render()}};
 document.querySelector('.quick').onclick=e=>{const b=e.target.closest('[data-add]');if(b)form(b.dataset.add)};
 document.getElementById('searchBtn').onclick=globalSearch;
+document.getElementById('backupBtn').onclick=backupData;
+document.getElementById('restoreBtn').onclick=()=>document.getElementById('restoreFile').click();
+document.getElementById('restoreFile').onchange=restoreData;
+function backupData(){
+ const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='BDM-Office-Backup-'+localDate()+'.json';a.click();URL.revokeObjectURL(a.href);
+}
+function restoreData(e){
+ const file=e.target.files[0];if(!file)return;
+ const reader=new FileReader();
+ reader.onload=()=>{try{
+   const restored=JSON.parse(reader.result);
+   const required=['tasks','followups','projects','notes','learning','appointments','calls','reminders'];
+   if(!required.every(k=>Array.isArray(restored[k])))throw new Error('Invalid backup');
+   data=restored;save();render();alert('BDM backup restored successfully.');
+ }catch(err){alert('That file is not a valid BDM backup.');}};
+ reader.readAsText(file);e.target.value='';
+}
 document.getElementById('globalSearch').addEventListener('keydown',e=>{if(e.key==='Enter')globalSearch()});
 function globalSearch(){
  const q=document.getElementById('globalSearch').value.trim().toLowerCase();
