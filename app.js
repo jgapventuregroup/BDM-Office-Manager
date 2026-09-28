@@ -37,7 +37,7 @@ function row(v,x,i){
  let body='';
  if(v==='tasks')body='<input class="check" type="checkbox" '+(x.done?'checked':'')+' onchange="toggle(\'tasks\','+i+')"><b>'+esc(x.title)+'</b>'+(x.due?' <span class="muted">· Due '+esc(x.due)+'</span>':'');
  else if(v==='followups')body='<b>'+esc(x.person)+'</b><br>'+esc(x.what)+(x.when?'<br><span class="muted">Follow up: '+esc(x.when)+'</span>':'');
- else if(v==='projects')body='<b>'+esc(x.customer)+'</b> — '+esc(x.project)+(x.address?'<br><span class="muted">'+esc(x.address)+'</span>':'')+(x.next?'<br>Next: '+esc(x.next):'');
+ else if(v==='projects')body='<div class="project-head"><b>'+esc(x.customer)+'</b><span class="status '+esc((x.status||'Active').toLowerCase().replace(/[^a-z]/g,''))+'">'+esc(x.status||'Active')+'</span></div> — '+esc(x.project)+(x.address?'<br><span class="muted">'+esc(x.address)+'</span>':'')+(x.next?'<br><strong>Next:</strong> '+esc(x.next):'')+(x.note?'<br><span class="muted">'+esc(x.note)+'</span>':'');
  else if(v==='appointments')body='<b>'+esc(x.date)+' '+esc(x.time)+'</b> — '+esc(x.title)+(x.person?' · '+esc(x.person):'')+(x.location?'<br><span class="muted">'+esc(x.location)+'</span>':'');
  else if(v==='calls')body='<b>'+esc(x.person)+'</b>'+(x.phone?' · '+esc(x.phone):'')+'<br>'+esc(x.reason);
  else if(v==='reminders')body='<b>'+esc(x.text)+'</b>'+(x.date?' · '+esc(x.date):'');
@@ -48,7 +48,7 @@ function form(type){
  const defs={
  task:['Task',[['title','What needs to be done?'],['due','Due date','date']]],
  followup:['Follow Up',[['person','Who?'],['what','What do I need to follow up about?'],['when','When?','date']]],
- project:['Project',[['customer','Customer'],['address','Address'],['project','Project'],['next',"What's next?"]]],
+ project:['Project',[['customer','Customer'],['address','Address'],['project','Project'],['status','Status'],['next',"What's next?"],['note','Important note','textarea']]],
  note:['Note',[['text','Write your note...','textarea']]],
  learning:['Learning',[['text','What am I learning?','textarea']]],
  appointment:['Appointment',[['title','Appointment / Event'],['person','Who?'],['date','Date','date'],['time','Time','time'],['location','Location']]],
@@ -56,11 +56,11 @@ function form(type){
  reminder:['Reminder',[['text','Reminder'],['date','Date','date']]]
  };
  const [title,fields]=defs[type];let html='<div class="form"><h2>Add '+title+'</h2>';
- fields.forEach((f,i)=>{html+='<label>'+f[1]+'</label>'+(f[2]==='textarea'?'<textarea id="f'+i+'"></textarea>':'<input id="f'+i+'" type="'+(f[2]||'text')+'">')});
+ fields.forEach((f,i)=>{html+='<label>'+f[1]+'</label>'+(f[2]==='textarea'?'<textarea id="f'+i+'"></textarea>':f[0]==='status'?'<select id="f'+i+'"><option>Active</option><option>Waiting</option><option>Scheduled</option><option>Completed</option><option>On Hold</option></select>':'<input id="f'+i+'" type="'+(f[2]||'text')+'">')});
  html+='<div class="actions"><button onclick="saveForm(\''+type+'\')">Save</button><button onclick="render()">Cancel</button></div></div>';document.getElementById('content').innerHTML=html;
 }
 function saveForm(type){
- const defs={task:['title','due'],followup:['person','what','when'],project:['customer','address','project','next'],note:['text'],learning:['text'],appointment:['title','person','date','time','location'],call:['person','phone','reason'],reminder:['text','date']};
+ const defs={task:['title','due'],followup:['person','what','when'],project:['customer','address','project','status','next','note'],note:['text'],learning:['text'],appointment:['title','person','date','time','location'],call:['person','phone','reason'],reminder:['text','date']};
  const o={};(defs[type]||[]).forEach((k,i)=>o[k]=document.getElementById('f'+i)?.value.trim()||'');if(type==='task'||type==='appointment'||type==='call'||type==='reminder')o.done=false;
  const v={task:'tasks',followup:'followups',project:'projects',note:'notes',learning:'learning',appointment:'appointments',call:'calls',reminder:'reminders'}[type];
  data[v].unshift(o);save();view=v;render();
