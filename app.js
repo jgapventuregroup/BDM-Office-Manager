@@ -57,6 +57,103 @@ document.getElementById('searchBtn').onclick = globalSearch;
 document.getElementById('backupBtn').onclick = backupData;
 document.getElementById('restoreBtn').onclick = () => document.getElementById('restoreFile').click();
 document.getElementById('restoreFile').onchange = restoreData;
+document.getElementById('importBtn').onclick = () => document.getElementById('importFile').click();
+document.getElementById('importFile').onchange = importOfficeFile;
+
+async function importOfficeFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    let rows = [];
+    if (/\.csv$/i.test(file.name)) {
+      const text = await file.text();
+      rows = csvRows(text);
+    } else if (/\.xlsx?$/i.test(file.name)) {
+      if (!window.XLSX) throw new Error('Spreadsheet reader not loaded');
+      const wb = XLSX.read(await file.arrayBuffer(), {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+    } else if (/\.docx$/i.test(file.name)) {
+      if (!window.mammoth) throw new Error('Word reader not loaded');
+      const result = await mammoth.extractRawText({arrayBuffer: await file.arrayBuffer()});
+      rows = [{text: result.value}];
+    } else {
+      throw new Error('Unsupported file');
+    }
+    showImportReview(file.name, rows);
+  } catch (err) {
+    alert('I could not read that file. Please check that it is a valid Excel, CSV, or Word document.');
+  }
+  e.target.value = '';
+}
+
+function csvRows(text) {
+  const lines = text.split(/\r?\n/).filter(Boolean);
+  if (!lines.length) return [];
+  const parse = line => line.split(',').map(x => x.trim().replace(/^"|"$/g,''));
+  const headers = parse(lines[0]);
+  return lines.slice(1).map(line => {
+    const vals = parse(line), o = {};
+    headers.forEach((h,i) => o[h] = vals[i] || '');
+    return o;
+  });
+}
+
+function inferImport(row) {
+  const s = JSON.stringify(row).toLowerCase();
+  if (s.includes('appointment') || s.includes('meeting') || s.includes('schedule')) return 'appointments';
+  if (s.includes('call') || s.includes('phone')) return 'calls';
+  if (s.includes('reminder')) return 'reminders';
+  if (s.includes('follow')) return 'followups';
+  if (s.includes('task') || s.includes('todo') || s.includes('to-do')) return 'tasks';
+  if (s.includes('project') || s.includes('customer') || s.includes('address')) return 'projects';
+  return 'notes';
+}
+
+function normalizeImport(row) {
+  const get = (...names) => {
+    const key = Object.keys(row).find(k => names.some(n => k.toLowerCase().trim() === n));
+    return key ? String(row[key] ?? '').trim() : '';
+  };
+  const raw = String(row.text || '');
+  const type = inferImport(row);
+  if (type === 'projects') return {type, data:{customer:get('customer','client'),address:get('address','job address'),project:get('project','job','description'),status:get('status') || 'Active',next:get('next','next step'),note:get('note','notes')}};
+  if (type === 'tasks') return {type,data:{title:get('task','title','description') || raw.slice(0,120),due:get('due','due date','date'),done:false}};
+  if (type === 'followups') return {type,data:{person:get('person','customer','client'),what:get('what','follow up','followup','reason') || raw,when:get('when','date'),done:false}};
+  if (type === 'appointments') return {type,data:{title:get('appointment','event','title') || raw.slice(0,120),person:get('person','customer','client'),date:get('date'),time:get('time'),location:get('location'),done:false}};
+  if (type === 'calls') return {type,data:{person:get('person','customer','client'),phone:get('phone','telephone'),reason:get('reason','what','call') || raw,done:false}};
+  if (type === 'reminders') return {type,data:{text:get('reminder','text','title') || raw.slice(0,120),date:get('date','due'),done:false}};
+  return {type:'notes',data:{title:get('title','subject') || 'Imported Note',category:get('category') || 'Imported',text:raw || JSON.stringify(row)}};
+}
+
+function showImportReview(name, rows) {
+  const items = rows.map(normalizeImport).filter(x => x.data && Object.values(x.data).some(Boolean));
+  window.pendingImport = items;
+  const counts = {};
+  items.forEach(x => counts[x.type] = (counts[x.type] || 0) + 1);
+  document.getElementById('content').innerHTML =
+    '<div class="form"><h2>Review Import</h2><p class="muted"><b>' + esc(name) +
+    '</b> was read successfully. Found ' + items.length + ' item' + (items.length === 1 ? '' : 's') + '.</p>' +
+    '<div class="card">' + Object.entries(counts).map(([k,v]) =>
+      '<div class="item"><b>' + esc(k.charAt(0).toUpperCase()+k.slice(1)) + '</b>: ' + v + '</div>').join('') +
+    '</div><p class="muted">Review the categories above, then choose Import to add them to the BDM dashboard.</p>' +
+    '<div class="actions"><button onclick="confirmImport()">Import</button><button onclick="cancelImport()">Cancel</button></div></div>';
+}
+
+function confirmImport() {
+  (window.pendingImport || []).forEach(x => data[x.type].unshift(x.data));
+  save();
+  window.pendingImport = null;
+  view = 'today';
+  render();
+  alert('Import completed successfully.');
+}
+
+function cancelImport() {
+  window.pendingImport = null;
+  render();
+}
+
 document.getElementById('globalSearch').addEventListener('keydown', e => {
   if (e.key === 'Enter') globalSearch();
 });
