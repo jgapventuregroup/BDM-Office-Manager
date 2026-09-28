@@ -32,8 +32,12 @@ function localDate(d = new Date()) {
 
 const today = localDate();
 
+const now = new Date();
+const hour = now.getHours();
+const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+document.querySelector('header h1').textContent = greeting;
 document.getElementById('todayDate').textContent =
-  new Date().toLocaleDateString(undefined, {
+  now.toLocaleDateString(undefined, {
     weekday:'long', month:'long', day:'numeric', year:'numeric'
   });
 
