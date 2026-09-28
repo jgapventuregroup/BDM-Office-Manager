@@ -12,3 +12,5 @@ body.auth-locked .shell{display:none}
 .auth-message{min-height:20px;margin-top:14px;font-size:13px;color:#5f6b75}
 .auth-message.error{color:#b42318;font-weight:700}
 .logout-btn{margin-top:8px;font-size:12px;padding:6px 9px}
+
+.login-gate[hidden]{display:none}
