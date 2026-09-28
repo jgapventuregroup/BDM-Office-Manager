@@ -29,6 +29,10 @@ function todayView(c){
 function card(t,b){return '<section class="card"><h3>'+t+'</h3>'+b+'</section>'}
 function empty(){return '<div class="muted">Nothing here yet.</div>'}
 function list(c,v){
+ if(v==='appointments'){appointmentList(c);return}
+function list(c,v){
+ if(v==='appointments'){appointmentList(c);return}
+
  const map={tasks:['Tasks','task'],followups:['Follow Ups','followup'],appointments:['Appointments','appointment'],calls:['Calls To Make','call'],reminders:['Important Reminders','reminder'],projects:['Projects','project'],notes:['Notes','note'],learning:["Things I'm Learning",'learning']};
  const [title,type]=map[v];let arr=data[v]||[];
  c.innerHTML='<h2>'+title+'</h2>'+(v==='tasks'?'<div class="task-help muted">Check a task when it is finished. Overdue tasks are marked automatically.</div>':'')+'<div class="actions"><button onclick="form(\''+type+'\')">+ Add</button></div><div class="list">'+(arr.length?arr.map((x,i)=>row(v,x,i)).join(''):'<div class="empty">Nothing here yet. Add your first one.</div>')+'</div>';
