@@ -16,15 +16,21 @@ function todayView(c){
  const ap=data.appointments.filter(x=>x.date===today&&!x.done).sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
  const calls=data.calls.filter(x=>!x.done);
  const rem=data.reminders.filter(x=>!x.done).sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'));
- const overdue=open.filter(x=>x.due&&x.due<today).length;
-
- c.innerHTML='<div class="summary"><div class="stat"><b>'+open.length+'</b><span>Open Tasks</span></div><div class="stat"><b>'+fu.length+'</b><span>Follow Ups</span></div><div class="stat"><b>'+ap.length+'</b><span>Appointments Today</span></div><div class="stat"><b>'+calls.length+'</b><span>Calls To Make</span></div></div>'+
- '<div class="grid">'+card('Things I Need To Do Today',open.slice(0,8).map((x,i)=>'<div class="item"><input class="check" type="checkbox" onchange="completeTaskByTitle('+JSON.stringify(x.title)+')"><b>'+esc(x.title)+'</b>'+(x.due?'<span class="'+(x.due<today?'overdue':'muted')+'"> · '+(x.due<today?'OVERDUE · ':'Due ')+esc(x.due)+'</span>':'')+'</div>').join('')||empty())+
- card('Appointments',ap.slice(0,6).map((x,i)=>'<div class="item"><b>'+esc(x.time||'')+'</b> '+esc(x.title)+(x.person?' — '+esc(x.person):'')+(x.location?'<span class="muted"> · '+esc(x.location)+'</span>':'')+'</div>').join('')||empty())+
- card('Calls To Make',calls.slice(0,6).map(x=>'<div class="item"><b>'+esc(x.person)+'</b>'+(x.phone?' <span class="muted">· '+esc(x.phone)+'</span>':'')+'<br>'+esc(x.reason)+'</div>').join('')||empty())+
+ const overdueTasks=open.filter(x=>x.due&&x.due<today).length;
+ const overdueFU=fu.filter(x=>x.when&&x.when<today).length;
+ const overdueRem=rem.filter(x=>x.date&&x.date<today).length;
+ const urgent=overdueTasks+overdueFU+overdueRem;
+ c.innerHTML=
+ '<div class="morning-panel"><div><h2>Today</h2><div class="muted">'+(urgent?'There are '+urgent+' overdue item'+(urgent===1?'':'s')+' that need attention.':'You are caught up. Here is what is on the schedule.')+'</div></div><button onclick="form(\'task\')">+ Add Task</button></div>'+
+ '<div class="summary"><div class="stat"><b>'+open.length+'</b><span>Open Tasks</span></div><div class="stat"><b>'+fu.length+'</b><span>Follow Ups</span></div><div class="stat"><b>'+ap.length+'</b><span>Appointments Today</span></div><div class="stat"><b>'+calls.length+'</b><span>Calls To Make</span></div></div>'+
+ '<div class="grid">'+
+ card('Tasks',open.slice(0,6).map((x)=>'<div class="item"><input class="check" type="checkbox" onchange="completeTaskByTitle('+JSON.stringify(x.title)+')"><b>'+esc(x.title)+'</b>'+(x.due?'<span class="'+(x.due<today?'overdue':'muted')+'"> · '+(x.due<today?'OVERDUE · ':'Due ')+esc(x.due)+'</span>':'')+'</div>').join('')||empty())+
+ card('Appointments',ap.slice(0,6).map(x=>'<div class="item"><b>'+esc(x.time||'No time')+'</b> — '+esc(x.title)+(x.person?' · '+esc(x.person):'')+(x.location?'<div class="muted">📍 '+esc(x.location)+'</div>':'')+'</div>').join('')||empty())+
  card('Follow Ups',fu.slice(0,6).map((x,i)=>'<div class="item"><input class="check" type="checkbox" onchange="completeFollowUpByIndex('+i+')"><b>'+esc(x.person)+'</b> — '+esc(x.what)+(x.when?'<span class="'+(x.when<today?'overdue':'muted')+'"> · '+(x.when<today?'OVERDUE · ':'Follow up ')+esc(x.when)+'</span>':'')+'</div>').join('')||empty())+
+ card('Calls',calls.slice(0,6).map(x=>'<div class="item"><b>'+esc(x.person)+'</b>'+(x.phone?' · '+esc(x.phone):'')+'<br>'+esc(x.reason)+'</div>').join('')||empty())+
  card('Important Reminders',rem.slice(0,6).map(x=>'<div class="item">'+esc(x.text)+(x.date?'<span class="'+(x.date<today?'overdue':'muted')+'"> · '+(x.date<today?'OVERDUE · ':'')+esc(x.date)+'</span>':'')+'</div>').join('')||empty())+
- card('Quick Notes',data.notes.slice(0,4).map(x=>'<div class="item">'+esc(x.text)+'</div>').join('')||empty())+'</div>'+(overdue?'<div class="alert">⚠ You have '+overdue+' overdue task'+(overdue===1?'':'s')+'.</div>':'');
+ card('Quick Notes',data.notes.slice(0,4).map(x=>'<div class="item"><b>'+esc(x.title||'Note')+'</b><div class="note-preview">'+esc(x.text)+'</div></div>').join('')||empty())+
+ '</div>';
 }
 function card(t,b){return '<section class="card"><h3>'+t+'</h3>'+b+'</section>'}
 function empty(){return '<div class="muted">Nothing here yet.</div>'}
