@@ -5,7 +5,8 @@ Object.keys(blank).forEach(k=>{if(!Array.isArray(data[k]))data[k]=[]});
 let view='today';
 const save=()=>localStorage.setItem(KEY,JSON.stringify(data));
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const today=new Date().toISOString().slice(0,10);
+function localDate(d=new Date()){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+day}
+const today=localDate();
 document.getElementById('todayDate').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'});
 document.getElementById('nav').onclick=e=>{const b=e.target.closest('[data-view]');if(b){view=b.dataset.view;render()}};
 document.querySelector('.quick').onclick=e=>{const b=e.target.closest('[data-add]');if(b)form(b.dataset.add)};
@@ -45,6 +46,7 @@ function todayView(c){
  const overdueFU=fu.filter(x=>x.when&&x.when<today).length;
  const overdueRem=rem.filter(x=>x.date&&x.date<today).length;
  const urgent=overdueTasks+overdueFU+overdueRem;
+ const upcoming=rem.filter(x=>x.date&&x.date>today).slice(0,3);
  c.innerHTML=
  '<div class="morning-panel"><div><h2>Today</h2><div class="muted">'+(urgent?'There are '+urgent+' overdue item'+(urgent===1?'':'s')+' that need attention.':'You are caught up. Here is what is on the schedule.')+'</div></div><button onclick="form(\'task\')">+ Add Task</button></div>'+
  '<div class="summary"><div class="stat"><b>'+open.length+'</b><span>Open Tasks</span></div><div class="stat"><b>'+fu.length+'</b><span>Follow Ups</span></div><div class="stat"><b>'+ap.length+'</b><span>Appointments Today</span></div><div class="stat"><b>'+calls.length+'</b><span>Calls To Make</span></div></div>'+
@@ -55,6 +57,7 @@ function todayView(c){
  card('Calls',calls.slice(0,6).map(x=>'<div class="item"><b>'+esc(x.person)+'</b>'+(x.phone?' · '+esc(x.phone):'')+'<br>'+esc(x.reason)+'</div>').join('')||empty())+
  card('Important Reminders',rem.slice(0,6).map(x=>'<div class="item">'+esc(x.text)+(x.date?'<span class="'+(x.date<today?'overdue':'muted')+'"> · '+(x.date<today?'OVERDUE · ':'')+esc(x.date)+'</span>':'')+'</div>').join('')||empty())+
  card('Quick Notes',data.notes.slice(0,4).map(x=>'<div class="item"><b>'+esc(x.title||'Note')+'</b><div class="note-preview">'+esc(x.text)+'</div></div>').join('')||empty())+
+ (upcoming.length?card('Coming Up',upcoming.map(x=>'<div class="item"><b>'+esc(x.text)+'</b><span class="muted"> · '+esc(x.date)+'</span></div>').join(''):'')+
  '</div>';
 }
 function card(t,b){return '<section class="card"><h3>'+t+'</h3>'+b+'</section>'}
