@@ -99,31 +99,50 @@ function csvRows(text) {
   });
 }
 
+function normalizeKey(k) {
+  return String(k || '').toLowerCase().trim().replace(/[\s_-]+/g,' ');
+}
+
+function field(row, aliases) {
+  const keys = Object.keys(row);
+  const key = keys.find(k => aliases.some(a => normalizeKey(k) === normalizeKey(a)));
+  return key ? String(row[key] ?? '').trim() : '';
+}
+
 function inferImport(row) {
-  const s = JSON.stringify(row).toLowerCase();
-  if (s.includes('appointment') || s.includes('meeting') || s.includes('schedule')) return 'appointments';
-  if (s.includes('call') || s.includes('phone')) return 'calls';
-  if (s.includes('reminder')) return 'reminders';
-  if (s.includes('follow')) return 'followups';
-  if (s.includes('task') || s.includes('todo') || s.includes('to-do')) return 'tasks';
-  if (s.includes('project') || s.includes('customer') || s.includes('address')) return 'projects';
+  const keys = Object.keys(row).map(normalizeKey);
+  const text = JSON.stringify(row).toLowerCase();
+  const has = (...a) => a.some(x => keys.includes(normalizeKey(x)));
+  if (has('appointment','event','meeting','appointment date') || text.includes('appointment')) return 'appointments';
+  if (has('call','phone','telephone','phone number') || text.includes('call')) return 'calls';
+  if (has('reminder','reminder date')) return 'reminders';
+  if (has('follow up','followup','follow-up','follow up date') || text.includes('follow up')) return 'followups';
+  if (has('task','to do','todo','action','action item','due date') || text.includes('task')) return 'tasks';
+  if (has('project','job','job name','job address','customer','client','address')) return 'projects';
   return 'notes';
 }
 
 function normalizeImport(row) {
-  const get = (...names) => {
-    const key = Object.keys(row).find(k => names.some(n => k.toLowerCase().trim() === n));
-    return key ? String(row[key] ?? '').trim() : '';
-  };
-  const raw = String(row.text || '');
+  const raw = String(row.text || '').trim();
   const type = inferImport(row);
-  if (type === 'projects') return {type, data:{customer:get('customer','client'),address:get('address','job address'),project:get('project','job','description'),status:get('status') || 'Active',next:get('next','next step'),note:get('note','notes')}};
-  if (type === 'tasks') return {type,data:{title:get('task','title','description') || raw.slice(0,120),due:get('due','due date','date'),done:false}};
-  if (type === 'followups') return {type,data:{person:get('person','customer','client'),what:get('what','follow up','followup','reason') || raw,when:get('when','date'),done:false}};
-  if (type === 'appointments') return {type,data:{title:get('appointment','event','title') || raw.slice(0,120),person:get('person','customer','client'),date:get('date'),time:get('time'),location:get('location'),done:false}};
-  if (type === 'calls') return {type,data:{person:get('person','customer','client'),phone:get('phone','telephone'),reason:get('reason','what','call') || raw,done:false}};
-  if (type === 'reminders') return {type,data:{text:get('reminder','text','title') || raw.slice(0,120),date:get('date','due'),done:false}};
-  return {type:'notes',data:{title:get('title','subject') || 'Imported Note',category:get('category') || 'Imported',text:raw || JSON.stringify(row)}};
+  const customer = field(row,['customer','client','customer name','client name']);
+  const address = field(row,['address','job address','project address','site address']);
+  const project = field(row,['project','project name','job','job name','job description','description']);
+  const status = field(row,['status','project status']) || 'Active';
+  const next = field(row,['next','next step','what is next','what’s next','action','action item']);
+  const notes = field(row,['note','notes','important note','comments']);
+  const person = field(row,['person','contact','customer','client','customer name','client name']);
+  const date = field(row,['date','due date','when','follow up date','appointment date','reminder date']);
+  const time = field(row,['time','appointment time','start time']);
+  const title = field(row,['title','task','task name','appointment','event','subject','reminder']);
+  const reason = field(row,['reason','reason for call','what','call reason','description']);
+  if (type === 'projects') return {type,data:{customer,address,project:project || title,status,next,note:notes}};
+  if (type === 'tasks') return {type,data:{title:title || project || raw.slice(0,120),due:date,done:false}};
+  if (type === 'followups') return {type,data:{person,what:field(row,['what','follow up about','followup about','reason']) || raw,when:date,done:false}};
+  if (type === 'appointments') return {type,data:{title:title || project || raw.slice(0,120),person,date,time,location:field(row,['location','where']),done:false}};
+  if (type === 'calls') return {type,data:{person,phone:field(row,['phone','telephone','phone number']),reason:reason || raw,done:false}};
+  if (type === 'reminders') return {type,data:{text:title || field(row,['reminder','text']) || raw.slice(0,120),date,done:false}};
+  return {type:'notes',data:{title:title || 'Imported Note',category:field(row,['category','type']) || 'Imported',text:raw || Object.entries(row).map(([k,v]) => k+': '+v).join('\n')}};
 }
 
 function showImportReview(name, rows) {
@@ -131,12 +150,14 @@ function showImportReview(name, rows) {
   window.pendingImport = items;
   const counts = {};
   items.forEach(x => counts[x.type] = (counts[x.type] || 0) + 1);
+  const label = {projects:'Projects',tasks:'Tasks',followups:'Follow Ups',appointments:'Appointments',calls:'Calls',reminders:'Reminders',notes:'Notes'};
   document.getElementById('content').innerHTML =
     '<div class="form"><h2>Review Import</h2><p class="muted"><b>' + esc(name) +
-    '</b> was read successfully. Found ' + items.length + ' item' + (items.length === 1 ? '' : 's') + '.</p>' +
+    '</b> was read successfully. I matched the information to BDM sections using the column names and content. Found ' +
+    items.length + ' item' + (items.length === 1 ? '' : 's') + '.</p>' +
     '<div class="card">' + Object.entries(counts).map(([k,v]) =>
-      '<div class="item"><b>' + esc(k.charAt(0).toUpperCase()+k.slice(1)) + '</b>: ' + v + '</div>').join('') +
-    '</div><p class="muted">Review the categories above, then choose Import to add them to the BDM dashboard.</p>' +
+      '<div class="item"><b>' + label[k] + '</b>: ' + v + '</div>').join('') + '</div>' +
+    '<p class="muted">Nothing is added until you click Import. You can cancel if the categories do not look right.</p>' +
     '<div class="actions"><button onclick="confirmImport()">Import</button><button onclick="cancelImport()">Cancel</button></div></div>';
 }
 
