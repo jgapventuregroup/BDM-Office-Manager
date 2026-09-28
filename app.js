@@ -61,8 +61,6 @@ async function cloudSaveAll() {
   localStorage.setItem(KEY, JSON.stringify(data));
 }
 
-const originalSave = save;
-async function saveToCloud() { originalSave(); await cloudSaveAll(); }
 
 
 const blank = {
@@ -83,7 +81,7 @@ Object.keys(blank).forEach(k => {
 
 let view = 'today';
 
-const save = () => localStorage.setItem(KEY, JSON.stringify(data));
+const save = async () => { localStorage.setItem(KEY, JSON.stringify(data)); await cloudSaveAll(); };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
   '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
 }[c]));
