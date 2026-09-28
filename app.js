@@ -9,7 +9,7 @@ const authCreate = document.getElementById('authCreate');
 const authMessage = document.getElementById('authMessage');
 const logoutBtn = document.getElementById('logoutBtn');
 function authStatus(message,error=false){authMessage.textContent=message;authMessage.className='auth-message'+(error?' error':'');}
-function showDashboard(session){document.body.classList.toggle('auth-locked',!session);loginGate.hidden=!!session;if(session)authPassword.value='';}
+function showDashboard(session){document.body.classList.toggle('auth-locked',!session);loginGate.hidden=!!session;if(session){authPassword.value='';setTimeout(cloudLoad,0);}}
 authLogin.onclick=async()=>{const email=authEmail.value.trim(),password=authPassword.value;if(!email||!password)return authStatus('Enter the email and password.',true);authLogin.disabled=true;authStatus('Signing in...');const{error}=await bdmAuth.auth.signInWithPassword({email,password});authLogin.disabled=false;if(error)authStatus('Sign-in failed. Check the email and password.',true);};
 authCreate.onclick=async()=>{const email=authEmail.value.trim(),password=authPassword.value;if(!email||!password)return authStatus('Enter the email and password you want to use.',true);if(password.length<6)return authStatus('The password must be at least 6 characters.',true);authCreate.disabled=true;authStatus('Creating the BDM account...');const{data,error}=await bdmAuth.auth.signUp({email,password});authCreate.disabled=false;if(error)return authStatus(error.message||'The account could not be created.',true);if(data.session)authStatus('Account created. Opening the dashboard...');else authStatus('Account created. Check the BDM email inbox to confirm the account, then sign in.');};
 authPassword.addEventListener('keydown',e=>{if(e.key==='Enter')authLogin.click();});
@@ -17,6 +17,53 @@ logoutBtn.onclick=async()=>{await bdmAuth.auth.signOut();};
 bdmAuth.auth.onAuthStateChange((_event,session)=>showDashboard(session));
 bdmAuth.auth.getSession().then(({data})=>showDashboard(data.session));
 const KEY = 'bdm-office-manager-v2';
+let cloudReady = false;
+let cloudLoaded = false;
+
+async function cloudLoad() {
+  const { data: authData } = await bdmAuth.auth.getSession();
+  if (!authData.session) return;
+  const { data: rows, error } = await bdmAuth.from('office_items').select('id,item_type,data,created_at,updated_at').order('created_at',{ascending:true});
+  if (error) { console.error('BDM cloud load failed', error); return; }
+  if (rows && rows.length) {
+    const fresh = structuredClone(blank);
+    rows.forEach(r => {
+      if (Array.isArray(fresh[r.item_type])) fresh[r.item_type].push({ ...r.data, _cloudId:r.id });
+    });
+    data = fresh;
+    localStorage.setItem(KEY, JSON.stringify(data));
+  } else {
+    const user = authData.session.user;
+    for (const type of Object.keys(blank)) {
+      for (const item of data[type]) {
+        await bdmAuth.from('office_items').insert({user_id:user.id,item_type:type,data:item});
+      }
+    }
+  }
+  cloudReady = true;
+  cloudLoaded = true;
+  render();
+}
+
+async function cloudSaveAll() {
+  if (!cloudReady) return;
+  const { data: authData } = await bdmAuth.auth.getSession();
+  if (!authData.session) return;
+  const user = authData.session.user;
+  const { data: existing } = await bdmAuth.from('office_items').select('id,item_type,data');
+  if (existing?.length) await bdmAuth.from('office_items').delete().eq('user_id',user.id);
+  const rows=[];
+  for (const type of Object.keys(blank)) for (const item of data[type]) {
+    const copy={...item}; delete copy._cloudId;
+    rows.push({user_id:user.id,item_type:type,data:copy});
+  }
+  if (rows.length) await bdmAuth.from('office_items').insert(rows);
+  localStorage.setItem(KEY, JSON.stringify(data));
+}
+
+const originalSave = save;
+async function saveToCloud() { originalSave(); await cloudSaveAll(); }
+
 
 const blank = {
   tasks: [],
