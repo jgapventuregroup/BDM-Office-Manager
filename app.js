@@ -22,7 +22,7 @@ function todayView(c){
  '<div class="grid">'+card('Things I Need To Do Today',open.slice(0,8).map((x,i)=>'<div class="item"><input class="check" type="checkbox" onchange="completeTaskByTitle('+JSON.stringify(x.title)+')"><b>'+esc(x.title)+'</b>'+(x.due?'<span class="'+(x.due<today?'overdue':'muted')+'"> · '+(x.due<today?'OVERDUE · ':'Due ')+esc(x.due)+'</span>':'')+'</div>').join('')||empty())+
  card('Appointments',ap.slice(0,6).map((x,i)=>'<div class="item"><b>'+esc(x.time||'')+'</b> '+esc(x.title)+(x.person?' — '+esc(x.person):'')+(x.location?'<span class="muted"> · '+esc(x.location)+'</span>':'')+'</div>').join('')||empty())+
  card('Calls To Make',calls.slice(0,6).map(x=>'<div class="item"><b>'+esc(x.person)+'</b>'+(x.phone?' <span class="muted">· '+esc(x.phone)+'</span>':'')+'<br>'+esc(x.reason)+'</div>').join('')||empty())+
- card('Follow Ups',fu.slice(0,6).map(x=>'<div class="item"><b>'+esc(x.person)+'</b> — '+esc(x.what)+(x.when?'<span class="muted"> · '+esc(x.when)+'</span>':'')+'</div>').join('')||empty())+
+ card('Follow Ups',fu.slice(0,6).map((x,i)=>'<div class="item"><input class="check" type="checkbox" onchange="completeFollowUpByIndex('+i+')"><b>'+esc(x.person)+'</b> — '+esc(x.what)+(x.when?'<span class="'+(x.when<today?'overdue':'muted')+'"> · '+(x.when<today?'OVERDUE · ':'Follow up ')+esc(x.when)+'</span>':'')+'</div>').join('')||empty())+
  card('Important Reminders',rem.slice(0,6).map(x=>'<div class="item">'+esc(x.text)+(x.date?'<span class="'+(x.date<today?'overdue':'muted')+'"> · '+(x.date<today?'OVERDUE · ':'')+esc(x.date)+'</span>':'')+'</div>').join('')||empty())+
  card('Quick Notes',data.notes.slice(0,4).map(x=>'<div class="item">'+esc(x.text)+'</div>').join('')||empty())+'</div>'+(overdue?'<div class="alert">⚠ You have '+overdue+' overdue task'+(overdue===1?'':'s')+'.</div>':'');
 }
@@ -66,6 +66,7 @@ function saveForm(type){
  data[v].unshift(o);save();view=v;render();
 }
 function completeTaskByTitle(title){const x=data.tasks.find(t=>t.title===title&&!t.done);if(x){x.done=true;save();render()}}
+function completeFollowUpByIndex(i){const pending=data.followups.filter(x=>!x.done);if(pending[i]){pending[i].done=true;save();render()}}
 function toggle(v,i){data[v][i].done=!data[v][i].done;save();render()}
 function removeItem(v,i){data[v].splice(i,1);save();render()}
 render();
