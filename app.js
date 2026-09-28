@@ -29,6 +29,17 @@ function todayView(c){
 function card(t,b){return '<section class="card"><h3>'+t+'</h3>'+b+'</section>'}
 function empty(){return '<div class="muted">Nothing here yet.</div>'}
 function list(c,v){
+ if(v==='reminders'){reminderList(c);return}
+function reminderList(c){
+ const arr=[...(data.reminders||[])].filter(x=>!x.done).sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'));
+ c.innerHTML='<h2>Important Reminders</h2><div class="task-help muted">Use reminders for important things you do not want to lose track of.</div><div class="actions"><button onclick="form(\'reminder\')">+ Add Reminder</button></div><div class="list">'+
+ (arr.length?arr.map(x=>'<div class="card reminder-card"><div><b>'+esc(x.text)+'</b>'+(x.date?'<div class="'+(x.date<today?'overdue':'muted')+'">'+(x.date<today?'OVERDUE · ':'Due ')+esc(x.date)+'</div>':'')+'</div><button onclick="completeReminder('+data.reminders.indexOf(x)+')">Mark Done</button></div>').join(''):'<div class="empty">No important reminders right now.</div>')+
+ '</div>';
+}
+function completeReminder(i){if(data.reminders[i]){data.reminders[i].done=true;save();render()}}
+function list(c,v){
+ if(v==='reminders'){reminderList(c);return}
+function list(c,v){
  if(v==='calls'){callList(c);return}
 function callList(c){
  const arr=[...(data.calls||[])].filter(x=>!x.done);
