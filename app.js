@@ -1,3 +1,21 @@
+const BDM_SUPABASE_URL = 'https://eomfadjwevllnvluixpz.supabase.co';
+const BDM_SUPABASE_KEY = 'sb_publishable_NxtREcVDVtGcteY8KPgRBw_vTaeqzg_';
+const bdmAuth = window.supabase.createClient(BDM_SUPABASE_URL, BDM_SUPABASE_KEY);
+const loginGate = document.getElementById('loginGate');
+const authEmail = document.getElementById('authEmail');
+const authPassword = document.getElementById('authPassword');
+const authLogin = document.getElementById('authLogin');
+const authCreate = document.getElementById('authCreate');
+const authMessage = document.getElementById('authMessage');
+const logoutBtn = document.getElementById('logoutBtn');
+function authStatus(message,error=false){authMessage.textContent=message;authMessage.className='auth-message'+(error?' error':'');}
+function showDashboard(session){document.body.classList.toggle('auth-locked',!session);loginGate.hidden=!!session;if(session)authPassword.value='';}
+authLogin.onclick=async()=>{const email=authEmail.value.trim(),password=authPassword.value;if(!email||!password)return authStatus('Enter the email and password.',true);authLogin.disabled=true;authStatus('Signing in...');const{error}=await bdmAuth.auth.signInWithPassword({email,password});authLogin.disabled=false;if(error)authStatus('Sign-in failed. Check the email and password.',true);};
+authCreate.onclick=async()=>{const email=authEmail.value.trim(),password=authPassword.value;if(!email||!password)return authStatus('Enter the email and password you want to use.',true);if(password.length<6)return authStatus('The password must be at least 6 characters.',true);authCreate.disabled=true;authStatus('Creating the BDM account...');const{data,error}=await bdmAuth.auth.signUp({email,password});authCreate.disabled=false;if(error)return authStatus(error.message||'The account could not be created.',true);if(data.session)authStatus('Account created. Opening the dashboard...');else authStatus('Account created. Check the BDM email inbox to confirm the account, then sign in.');};
+authPassword.addEventListener('keydown',e=>{if(e.key==='Enter')authLogin.click();});
+logoutBtn.onclick=async()=>{await bdmAuth.auth.signOut();};
+bdmAuth.auth.onAuthStateChange((_event,session)=>showDashboard(session));
+bdmAuth.auth.getSession().then(({data})=>showDashboard(data.session));
 const KEY = 'bdm-office-manager-v2';
 
 const blank = {
