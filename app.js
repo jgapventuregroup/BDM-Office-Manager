@@ -9,6 +9,31 @@ const today=new Date().toISOString().slice(0,10);
 document.getElementById('todayDate').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'});
 document.getElementById('nav').onclick=e=>{const b=e.target.closest('[data-view]');if(b){view=b.dataset.view;render()}};
 document.querySelector('.quick').onclick=e=>{const b=e.target.closest('[data-add]');if(b)form(b.dataset.add)};
+document.getElementById('searchBtn').onclick=globalSearch;
+document.getElementById('globalSearch').addEventListener('keydown',e=>{if(e.key==='Enter')globalSearch()});
+function globalSearch(){
+ const q=document.getElementById('globalSearch').value.trim().toLowerCase();
+ if(!q){render();return}
+ const sources=[['Tasks','tasks'],['Follow Ups','followups'],['Appointments','appointments'],['Calls','calls'],['Reminders','reminders'],['Projects','projects'],['Notes','notes'],['Things I\'m Learning','learning']];
+ const hits=[];
+ sources.forEach(([label,key])=>(data[key]||[]).forEach((x,i)=>{
+   if(JSON.stringify(x).toLowerCase().includes(q))hits.push({label,key,x,i});
+ }));
+ const c=document.getElementById('content');
+ c.innerHTML='<h2>Search Results</h2><div class="muted search-count">'+hits.length+' result'+(hits.length===1?'':'s')+' for “'+esc(q)+'”</div>'+
+ (hits.length?'<div class="list">'+hits.map(h=>'<div class="card search-result"><span class="tag">'+h.label+'</span><div>'+searchText(h.key,h.x)+'</div><button onclick="jumpToResult(\''+h.key+'\','+h.i+')">Open</button></div>').join('')+'</div>':'<div class="empty">No matching information found.</div>');
+}
+function searchText(k,x){
+ if(k==='projects')return '<b>'+esc(x.customer)+'</b> — '+esc(x.project)+(x.address?' · '+esc(x.address):'');
+ if(k==='followups')return '<b>'+esc(x.person)+'</b> — '+esc(x.what);
+ if(k==='appointments')return '<b>'+esc(x.title)+'</b> · '+esc(x.date||'')+' '+esc(x.time||'');
+ if(k==='calls')return '<b>'+esc(x.person)+'</b> — '+esc(x.reason);
+ if(k==='notes')return '<b>'+esc(x.title||'Note')+'</b> — '+esc(x.text);
+ if(k==='learning')return '<b>'+esc(x.question)+'</b> — '+esc(x.answer);
+ return '<b>'+esc(x.title||x.text)+'</b>';
+}
+function jumpToResult(k,i){view=k;render()}
+
 function render(){document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===view));const c=document.getElementById('content');if(view==='today')todayView(c);else list(c,view)}
 function todayView(c){
  const open=data.tasks.filter(x=>!x.done).sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999'));
