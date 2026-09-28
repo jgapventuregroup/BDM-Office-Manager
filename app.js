@@ -29,6 +29,17 @@ function todayView(c){
 function card(t,b){return '<section class="card"><h3>'+t+'</h3>'+b+'</section>'}
 function empty(){return '<div class="muted">Nothing here yet.</div>'}
 function list(c,v){
+ if(v==='calls'){callList(c);return}
+function callList(c){
+ const arr=[...(data.calls||[])].filter(x=>!x.done);
+ c.innerHTML='<h2>Calls To Make</h2><div class="task-help muted">Keep the reason for the call here so nothing important gets missed.</div><div class="actions"><button onclick="form(\'call\')">+ Add Call</button></div><div class="list">'+
+ (arr.length?arr.map((x)=>'<div class="card call-card"><div class="call-main"><div><b>'+esc(x.person)+'</b>'+(x.phone?' <span class="muted">· '+esc(x.phone)+'</span>':'')+'</div><div>'+esc(x.reason)+'</div></div><button onclick="completeCall('+data.calls.indexOf(x)+')">Mark Done</button></div>').join(''):'<div class="empty">No calls waiting. Add a call when something needs attention.</div>')+
+ '</div>';
+}
+function completeCall(i){if(data.calls[i]){data.calls[i].done=true;save();render()}}
+function list(c,v){
+ if(v==='calls'){callList(c);return}
+function list(c,v){
  if(v==='appointments'){appointmentList(c);return}
 function list(c,v){
  if(v==='appointments'){appointmentList(c);return}
