@@ -6,8 +6,8 @@
 <title>BDM Office Manager</title>
 <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-<div class="shell">
+<body class="auth-locked">
+<div id="loginGate" class="login-gate"><div class="login-card"><div class="login-mark">BDM</div><div class="eyebrow">BDM CONSTRUCTION</div><h1>Office Manager</h1><p class="muted">Sign in to open the office dashboard.</p><label>Email</label><input id="authEmail" type="email" value="lesleigh@bdm-construction.com" autocomplete="username"><label>Password</label><input id="authPassword" type="password" autocomplete="current-password"><button id="authLogin" class="login-primary">Sign In</button><button id="authCreate" class="login-secondary">Create Account</button><div id="authMessage" class="auth-message"></div></div></div><div class="shell">
 <aside>
   <div class="brand"><div class="mark">BDM</div><div><strong>BDM Construction</strong><span>Office Manager</span></div></div>
   <nav id="nav">
@@ -26,7 +26,7 @@
 <section class="main">
 <header>
   <div><div class="eyebrow">OFFICE DASHBOARD</div><h1>Good morning</h1><div class="muted">Everything you need for the day in one place.</div></div>
-  <div class="date" id="todayDate"></div>
+  <div class="date"><div id="todayDate"></div><button id="logoutBtn" class="logout-btn">Sign Out</button></div>
 </header>
 <div class="searchbar"><input id="globalSearch" placeholder="Search customers, projects, notes, tasks..."><button id="searchBtn">Search</button></div>
 <div class="utility">
@@ -46,8 +46,9 @@
 <main id="content"></main>
 </section>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
-<script src="app.js?v=20260928-3"></script>
+<script src="app.js?v=20260928-4"></script>
 </body>
 </html>
